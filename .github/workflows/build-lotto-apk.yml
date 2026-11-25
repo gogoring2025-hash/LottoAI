@@ -1,0 +1,40 @@
+name: Build LOTTO AI APK
+'on':
+  workflow_dispatch:
+  push:
+    paths:
+      - 'LottoAI_Android.zip'
+      - '.github/workflows/build-lotto-apk.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Unpack project
+        run: unzip -q LottoAI_Android.zip
+      - name: Install Android SDK packages
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-disabled: true
+      - name: Test analysis engine
+        working-directory: LottoAI_Android
+        run: node tests/test.js
+      - name: Build debug APK
+        working-directory: LottoAI_Android
+        run: gradle --no-daemon assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOTTO-AI-APK
+          path: LottoAI_Android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
